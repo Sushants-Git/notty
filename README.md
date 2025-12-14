@@ -1,3 +1,3 @@
-# notty
+# notty (wip)
 
 My personal workstation
