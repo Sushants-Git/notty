@@ -1,14 +1,29 @@
 import CodeMirror from "@uiw/react-codemirror";
 import editorTheme from "./theme";
-import { LINE_ENDINGS } from "./constants";
+import { DIFF_TYPES, LINE_ENDINGS } from "./constants";
 
-const oldText = `Hello there,
-my name is
-Sushant Mishra`;
+const oldText = `SUSHANT
+MISHRA
+RAJPUT
+`;
 
-const newText = `Hello there,
-my name is
-Anuj Mishra`;
+const newText = `SUSHANT
+SINGH
+RAJPUT
+`;
+
+// const oldText = `
+// Hello there,
+// Sushant Mishra
+// my name is
+// are you sure`;
+//
+// const newText = `
+// Hello there,
+// Anuj Mishra
+// my name is
+// What is going ver here
+// `;
 
 function App() {
     return (
@@ -24,33 +39,61 @@ function App() {
     );
 }
 
-function getLengthOfLCS(oldText: string, newText: string) {
-    const oldTokens = oldText.split(LINE_ENDINGS.LF);
-    const newTokens = newText.split(LINE_ENDINGS.LF);
+function getLCSLength(oldText: string, newText: string) {
+    const oldLines = oldText.split(LINE_ENDINGS.LF);
+    const newLines = newText.split(LINE_ENDINGS.LF);
 
-    const lcsMatrix = Array.from({ length: oldTokens.length + 1 }, () =>
-        Array.from({ length: newTokens.length + 1 }).fill(0)
+    const dp = Array.from({ length: oldLines.length + 1 }, () =>
+        Array.from({ length: newLines.length + 1 }).fill(0)
     ) as number[][];
 
-    for (let i = 1; i < lcsMatrix.length; i++) {
-        for (let j = 1; j < lcsMatrix[i].length; j++) {
-            if (oldTokens[i - 1] === newTokens[j - 1]) {
-                lcsMatrix[i][j] = lcsMatrix[i - 1][j - 1] + 1;
+    for (let i = 1; i <= oldLines.length; i++) {
+        for (let j = 1; j <= newLines.length; j++) {
+            if (oldLines[i - 1] === newLines[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
             } else {
-                lcsMatrix[i][j] = Math.max(
-                    lcsMatrix[i][j - 1],
-                    lcsMatrix[i - 1][j]
-                );
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
             }
         }
     }
 
-    return lcsMatrix[oldTokens.length][newTokens.length];
+    return dp;
+}
+
+function getLCS(oldText: string, newText: string, lcsMatrix: number[][]) {
+    const oldLines = oldText.split(LINE_ENDINGS.LF);
+    const newLines = newText.split(LINE_ENDINGS.LF);
+
+    const lcsLines = [];
+
+    let i = oldLines.length;
+    let j = newLines.length;
+
+    while (i > 0 && j > 0) {
+        if (oldLines[i - 1] === newLines[j - 1]) {
+            lcsLines.push({ line: oldLines[i - 1] });
+
+            i--;
+            j--;
+        } else if (lcsMatrix[i][j - 1] <= lcsMatrix[i - 1][j]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+
+    return lcsLines.reverse();
 }
 
 function getDiff(oldText: string, newText: string) {
-    const lengthOfLCS = getLengthOfLCS(oldText, newText);
-    return lengthOfLCS;
+    const oldLines = oldText.split(LINE_ENDINGS.LF);
+    const newLines = newText.split(LINE_ENDINGS.LF);
+
+    const lcsMatrix = getLCSLength(oldText, newText);
+
+    const lcs = getLCS(oldText, newText, lcsMatrix);
+
+    return lcs;
 }
 
 function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
@@ -63,7 +106,7 @@ function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
                 <pre className="font-chillax">{newText}</pre>
             </div>
             -----
-            <div>length of lcs : {diff}</div>
+            <div>length of lcs : {JSON.stringify(diff, null, 2)}</div>
             {/* <div className="border mt-4"> */}
             {/* </div> */}
         </div>
